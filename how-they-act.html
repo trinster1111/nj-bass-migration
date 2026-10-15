@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>How They Act | Pt. Beach Striper Tracker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="font-sans antialiased min-h-screen flex flex-col justify-between">
+
+  <div>
+    <div id="site-header"></div>
+
+    <main class="max-w-7xl mx-auto px-4 py-8 space-y-10">
+      <!-- INTERACTIVE CALCULATOR -->
+      <section class="bg-slate-900 border border-slate-800 rounded-xl p-6 md:p-8">
+        <span class="text-xs font-mono uppercase tracking-widest text-emerald-400">Pt. Beach Surf Experience Engine</span>
+        <h1 class="text-2xl font-extrabold text-white mt-1">How Striped Bass Act &amp; What to Throw</h1>
+        <p class="text-sm text-slate-400 mt-1 mb-6">
+          Dial in the exact tide stage, moon phase, barometric pressure, and time of day to see how bass feed and how to break lockjaw.
+        </p>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          <div class="lg:col-span-5 grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-950 p-5 rounded-xl border border-slate-800">
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-400 mb-1.5">Time of Day</label>
+              <select id="sel-time" onchange="calculateBehavior()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
+                <option value="dawn">First Light / Dawn</option>
+                <option value="day">High Sun / Midday</option>
+                <option value="dusk">Dusk / Sunset</option>
+                <option value="night" selected>Dead of Night</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-400 mb-1.5">Tide Stage</label>
+              <select id="sel-tide" onchange="calculateBehavior()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
+                <option value="incoming">Incoming (Flood)</option>
+                <option value="outgoing" selected>Outgoing (Dropping)</option>
+                <option value="slack">High / Low Slack</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-400 mb-1.5">Barometric Pressure</label>
+              <select id="sel-baro" onchange="calculateBehavior()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
+                <option value="dropping" selected>Dropping (&lt;29.90 Pre-Front)</option>
+                <option value="steady">Steady (29.90–30.15)</option>
+                <option value="rising">High &amp; Rising (&gt;30.20 Post-Storm)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-400 mb-1.5">Moon Phase</label>
+              <select id="sel-moon" onchange="calculateBehavior()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
+                <option value="new" selected>New Moon (Pitch Dark / Hard Current)</option>
+                <option value="full">Full Moon (Bright Sky / Hard Current)</option>
+                <option value="quarter">Quarter Moon (Moderate Current)</option>
+              </select>
+            </div>
+            <div class="sm:col-span-2">
+              <label class="block text-xs font-bold uppercase text-slate-400 mb-1.5">Current Fish Mood</label>
+              <select id="sel-mood" onchange="calculateBehavior()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
+                <option value="active">Active / Blitzing / Moving</option>
+                <option value="lockjaw" selected>Not Biting / Rolling on Bait / Lockjaw</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="lg:col-span-7 bg-slate-950 border border-emerald-500/30 rounded-xl p-6 space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+              <span class="text-xs font-mono text-emerald-400 uppercase">Tactical Surf Call</span>
+              <span id="out-badge" class="text-xs bg-amber-500/20 text-amber-300 px-2.5 py-0.5 rounded font-bold">Prime Window</span>
+            </div>
+            <h2 id="out-title" class="text-lg font-bold text-white"></h2>
+            <p id="out-behavior" class="text-sm text-slate-300 leading-relaxed"></p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+              <div class="bg-slate-900 p-4 rounded-lg border border-slate-800">
+                <span class="text-xs font-bold uppercase text-emerald-400 block mb-1">🎯 Primary Plug / Bait Call</span>
+                <p id="out-primary" class="text-sm text-white font-semibold"></p>
+              </div>
+              <div class="bg-slate-900 p-4 rounded-lg border border-slate-800">
+                <span class="text-xs font-bold uppercase text-amber-400 block mb-1">🔓 Lockjaw / Plan B Adjustment</span>
+                <p id="out-planb" class="text-sm text-white font-semibold"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- THE 4 PILLARS OF STRIPER BEHAVIOR -->
+      <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-2">
+          <h3 class="text-lg font-bold text-emerald-400">🌊 1. Tide Stage (Why Moving Water Wins)</h3>
+          <p class="text-sm text-slate-300 leading-relaxed">
+            Bass rarely burn energy hunting in dead slack water unless trapping bunker. On the <strong>Incoming Flood</strong>, high water lets big fish push over outer sandbars right into the shorebreak trough to pin bait against the dry sand. On the <strong>Outgoing Drop</strong>, Manasquan and Barnegat Inlets act like conveyor belts dumping crabs, mullet, and eels into the ocean—fish the jetty tips and outer sloughs.
+          </p>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-2">
+          <h3 class="text-lg font-bold text-amber-400">🌕 2. Moon Phase (New vs. Full Moon)</h3>
+          <p class="text-sm text-slate-300 leading-relaxed">
+            Both New and Full moons create massive "Spring Tides" with extra current speed. <strong>New Moon nights</strong> are pitch black—bass rely heavily on their lateral line to feel vibration, making wide-wobbling darters, metal-lips, and black/blurple SP Minnows lethal. <strong>Full Moon nights</strong> often cause bass to feed late at night or during the afternoon change of tide—try bone or yellow needlefish under bright moonlight.
+          </p>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-2">
+          <h3 class="text-lg font-bold text-sky-400">🧭 3. Barometric Pressure</h3>
+          <p class="text-sm text-slate-300 leading-relaxed">
+            Watch the barometer in the top bar of this site. When pressure is <strong>dropping below 29.90 inHg</strong> ahead of a front or Nor'easter, bass go on a feeding binge. When a cold front passes and pressure <strong>spikes above 30.25 inHg</strong> with bluebird skies, bass sink tight to the bottom and get lockjaw.
+          </p>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-2">
+          <h3 class="text-lg font-bold text-rose-400">🔓 4. Our Personal Lockjaw Playbook</h3>
+          <p class="text-sm text-slate-300 leading-relaxed">
+            When you know fish are in front of you (rolling on bunker or bumping your plug without hooking up): <strong>1)</strong> Tie a 3/0 white bucktail teaser 16" ahead of your plug, <strong>2)</strong> Downsize leader to 30lb fluorocarbon, <strong>3)</strong> Swap loud rattled plugs for a silent needlefish or unweighted soft plastic, and <strong>4)</strong> Cut your retrieve speed in half.
+          </p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="site-footer"></div>
+
+  <script src="js/app.js"></script>
+  <script>
+    function calculateBehavior() {
+      const time = document.getElementById('sel-time').value;
+      const tide = document.getElementById('sel-tide').value;
+      const baro = document.getElementById('sel-baro').value;
+      const moon = document.getElementById('sel-moon').value;
+      const mood = document.getElementById('sel-mood').value;
+
+      let title = 'Moving Water Transition Window';
+      let behavior = 'Bass are cruising the sloughs and cuts between sandbars looking for disoriented bait pushed by the current.';
+      let badge = 'High-Percentage Window';
+
+      if (baro === 'dropping' && tide === 'outgoing') {
+        title = 'Pre-Front Outgoing Flush (Aggressive Feed Window)';
+        behavior = 'A dropping barometer combined with water dumping out of Manasquan Inlet and back bays flushes bait straight into the trough. Bass stage on the outer edge of the wash and ambush anything swept out.';
+      } else if (time === 'day' && baro === 'rising') {
+        title = 'High-Pressure Bluebird Sky Slump';
+        badge = 'Technical / Grind Window';
+        behavior = 'Post-front high pressure and bright sun pushes bass deeper off the beach lip or tight against deep structure. They will ignore noisy surface plugs in clean water.';
+      } else if (time === 'night') {
+        title = moon === 'new' ? 'New Moon Night Patrol (Tight to the Beach Lip)' : 'Moonlit Night Surf Window';
+        behavior = 'Under cover of darkness, big bass push within 15 feet of the dry sand to pin bunker, mullet, and sand eels against the shorebreak. Silhouette and slow vibration matter more than color.';
+      }
+
+      const primary = time === 'night'
+        ? (moon === 'new' ? 'Black or Blurple 6" SP Minnow, Super Strike Darter, or slow-rolled Needlefish.' : 'Bone or Yellow Needlefish, White Bucktail + Pork Rind/Otter Tail, or Rigged Live Eel.')
+        : (time === 'dawn' || time === 'dusk')
+        ? 'Bone/Yellow Pencil Popper or Little Neck Swimmer worked across the outer bar and into the trough.'
+        : 'Ava A27 Diamond Jig (long-cast to outer bar) or 5" White Paddle-Tail Swim Shad bounced off bottom.';
+
+      const planB = mood === 'lockjaw'
+        ? 'LOCKJAW FIX: Add a white bucktail teaser 18" ahead of your plug (90% of picky bass eat the teaser), downsize to 30lb fluorocarbon leader, or crawl a weighted soft plastic/rigged eel dead-slow on bottom.'
+        : 'Keep retrieve steady and cover water—walk the beach until you intersect the moving school in a cut.';
+
+      document.getElementById('out-title').textContent = title;
+      document.getElementById('out-behavior').textContent = behavior;
+      document.getElementById('out-primary').textContent = primary;
+      document.getElementById('out-planb').textContent = planB;
+      document.getElementById('out-badge').textContent = badge;
+    }
+    calculateBehavior();
+  </script>
+</body>
+</html>
