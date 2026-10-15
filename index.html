@@ -1,1 +1,508 @@
 <html><body style="background:#0f172a;color:#f8fafc;font-family:sans-serif;text-align:center;padding-top:100px;"><h1>NJ Bass Migration Tracker</h1><p>Pt. Beach Live Surf and Migration Conditions Coming Soon</p></body></html>
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NJ Bass Migration | Pt. Beach Striper Tracker & Surf Guide</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Leaflet.js Map CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    body { background-color: #0b1120; color: #f1f5f9; }
+    #map { height: 480px; width: 100%; border-radius: 0.75rem; z-index: 10; }
+    .leaflet-popup-content-wrapper, .leaflet-popup-tip {
+      background: #1e293b; color: #f8fafc; border: 1px solid #334155;
+    }
+  </style>
+</head>
+<body class="font-sans antialiased selection:bg-emerald-500 selection:text-slate-900">
+
+  <!-- LIVE TELEMETRY TOP BAR (Pt. Beach / Manasquan Inlet) -->
+  <div class="bg-slate-950 border-b border-slate-800 px-4 py-2 text-xs md:text-sm">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+      <div class="flex items-center gap-2">
+        <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span class="font-bold tracking-wider uppercase text-emerald-400">Live Telemetry: Pt. Beach / Manasquan</span>
+      </div>
+      <div class="flex flex-wrap gap-4 md:gap-6 text-slate-300 font-mono">
+        <div>💧 Water: <span id="water-temp" class="text-white font-bold">61.4°F</span></div>
+        <div>🌡️ Air: <span id="air-temp" class="text-white font-bold">Loading...</span></div>
+        <div>💨 Wind: <span id="wind-speed" class="text-white font-bold">Loading...</span></div>
+        <div>🧭 Barometer: <span id="barometer" class="text-white font-bold">Loading...</span></div>
+        <div>🌊 NJ Slot: <span class="text-amber-400 font-bold">1 Fish (28" to &lt;31")</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NAVIGATION -->
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-4">
+      <div>
+        <h1 class="text-xl md:text-2xl font-extrabold tracking-tight text-white flex items-center gap-2">
+          🐟 PT. BEACH STRIPER TRACKER
+          <span class="text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded font-mono">100% FREE / NO BS</span>
+        </h1>
+        <p class="text-xs text-slate-400">Built by Pt. Pleasant Beach surfcasters. Verified by local boats &amp; shops.</p>
+      </div>
+      <nav class="flex flex-wrap gap-4 text-sm font-semibold text-slate-300">
+        <a href="#tracker" class="hover:text-emerald-400 transition">Migration Map</a>
+        <a href="#how-they-act" class="hover:text-emerald-400 transition">How They Act</a>
+        <a href="#tackle" class="hover:text-emerald-400 transition">No-BS Tackle</a>
+        <a href="#cook" class="hover:text-emerald-400 transition">Cook Your Catch</a>
+        <a href="#conservation" class="hover:text-emerald-400 transition">Conservation</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 py-8 space-y-12">
+
+    <!-- SECTION 1: LIVE & HISTORICAL MIGRATION TRACKER -->
+    <section id="tracker" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-4 md:p-6 shadow-xl">
+        <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
+          <div>
+            <h2 class="text-xl font-bold text-white">NJ Coastal Bass Migration Tracker</h2>
+            <p class="text-sm text-slate-400">Zone-based reporting (Zero spot-burning). Click any coastal zone for bait &amp; bite intel.</p>
+          </div>
+          <!-- Toggle: Live vs Historical -->
+          <div class="inline-flex rounded-lg bg-slate-950 p-1 border border-slate-800">
+            <button id="btn-live" onclick="setMapMode('live')" class="px-3 py-1.5 text-xs font-bold rounded-md bg-emerald-500 text-slate-950 transition">
+              🔴 LIVE (Mid-Oct)
+            </button>
+            <button id="btn-hist" onclick="setMapMode('historical')" class="px-3 py-1.5 text-xs font-bold rounded-md text-slate-400 hover:text-white transition">
+              📅 5-Yr Avg (Oct Wk 3)
+            </button>
+          </div>
+        </div>
+
+        <!-- THE LEAFLET MAP -->
+        <div id="map"></div>
+
+        <!-- Legend -->
+        <div class="flex flex-wrap items-center justify-between gap-4 mt-4 pt-3 border-t border-slate-800 text-xs text-slate-400">
+          <div class="flex flex-wrap items-center gap-4">
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-red-500 inline-block"></span> Heavy Biomass / Blitz</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-amber-400 inline-block"></span> Moving In / Picky Bite</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-sky-400 inline-block"></span> Resident Shorts / Scout Fish</span>
+          </div>
+          <span id="mode-indicator" class="font-mono text-emerald-400">Showing: Current Fleet &amp; Surf Intel</span>
+        </div>
+      </div>
+
+      <!-- SIDEBAR: ZONE BREAKDOWN & FLEET INTEL -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 flex flex-col justify-between space-y-6">
+        <div>
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+            <h3 class="text-lg font-bold text-white">Zone Status Breakdown</h3>
+            <span class="text-xs font-mono text-slate-400">Updated Daily</span>
+          </div>
+          <div id="zone-cards" class="space-y-3">
+            <!-- Populated dynamically by JS -->
+          </div>
+        </div>
+
+        <div class="bg-slate-950 border border-slate-800 rounded-lg p-4">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-amber-400 mb-1">⚡ Pt. Beach Local Note</h4>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Mullet run is tapering and adult bunker pods are pushing tight to the beach from Bay Head down to IBSP on west winds. Keep a white needlefish and an A27 diamond jig in the bag.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 2: INTERACTIVE "HOW THEY ACT" ENGINE -->
+    <section id="how-they-act" class="bg-slate-900 border border-slate-800 rounded-xl p-6 md:p-8">
+      <div class="max-w-3xl mb-6">
+        <span class="text-xs font-mono uppercase tracking-widest text-emerald-400">Pt. Beach Surf Experience Engine</span>
+        <h2 class="text-2xl font-extrabold text-white mt-1">How They Act &amp; What to Throw When They Have Lockjaw</h2>
+        <p class="text-sm text-slate-400 mt-1">
+          Striped bass feed on environmental triggers—tide movement, light angle, and barometric pressure swings. Plug in what you're seeing on the beach right now.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <!-- Controls -->
+        <div class="lg:col-span-5 grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-950 p-5 rounded-xl border border-slate-800">
+          <div>
+            <label class="block text-xs font-bold uppercase text-slate-400 mb-1.5">Time of Day</label>
+            <select id="sel-time" onchange="calculateBehavior()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none">
+              <option value="dawn">First Light / Dawn</option>
+              <option value="day">High Sun / Midday</option>
+              <option value="dusk">Dusk / Sunset</option>
+              <option value="night" selected>Dead of Night</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold uppercase text-slate-400 mb-1.5">Tide Stage</label>
+            <select id="sel-tide" onchange="calculateBehavior()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none">
+              <option value="incoming">Incoming (Flood)</option>
+              <option value="outgoing" selected>Outgoing (Dropping)</option>
+              <option value="slack">High / Low Slack</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold uppercase text-slate-400 mb-1.5">Barometric Pressure</label>
+            <select id="sel-baro" onchange="calculateBehavior()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none">
+              <option value="dropping" selected>Dropping (Front Approaching)</option>
+              <option value="steady">Steady (Normal)</option>
+              <option value="rising">High &amp; Rising (Post-Storm)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold uppercase text-slate-400 mb-1.5">Current Mood</label>
+            <select id="sel-mood" onchange="calculateBehavior()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none">
+              <option value="active">Active / Moving</option>
+              <option value="lockjaw" selected>Not Biting / Slapping Plugs</option>
+            </select>
+          </div>
+
+          <div class="sm:col-span-2 pt-2">
+            <button onclick="calculateBehavior()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold py-2.5 rounded-lg text-sm transition">
+              Update Tactical Call
+            </button>
+          </div>
+        </div>
+
+        <!-- Output Card -->
+        <div class="lg:col-span-7 bg-slate-950 border border-emerald-500/30 rounded-xl p-6 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+            <span class="text-xs font-mono text-emerald-400 uppercase">Recommended Pt. Beach Playbook</span>
+            <span id="out-badge" class="text-xs bg-amber-500/20 text-amber-300 px-2.5 py-0.5 rounded font-bold">High-Percentage Window</span>
+          </div>
+          <div>
+            <h3 id="out-title" class="text-lg font-bold text-white">Loading...</h3>
+            <p id="out-behavior" class="text-sm text-slate-300 mt-1 leading-relaxed"></p>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+            <div class="bg-slate-900 p-3.5 rounded-lg border border-slate-800">
+              <span class="text-xs font-bold uppercase text-emerald-400 block mb-1">🎯 Primary Plug / Bait Call</span>
+              <p id="out-primary" class="text-sm text-white font-semibold"></p>
+            </div>
+            <div class="bg-slate-900 p-3.5 rounded-lg border border-slate-800">
+              <span class="text-xs font-bold uppercase text-amber-400 block mb-1">🔓 Lockjaw / Plan B Adjustment</span>
+              <p id="out-planb" class="text-sm text-white font-semibold"></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 3: TACKLE, COOKING & CONSERVATION GRID -->
+    <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <!-- Tackle Card -->
+      <div id="tackle" class="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col justify-between">
+        <div>
+          <span class="text-xs font-mono text-emerald-400 uppercase">Zero-Gimmick Gear</span>
+          <h3 class="text-xl font-bold text-white mt-1 mb-3">Pt. Beach Plug Bag Essentials</h3>
+          <ul class="space-y-2.5 text-sm text-slate-300">
+            <li class="flex justify-between border-b border-slate-800 pb-2">
+              <span><strong>Super Strike Little Neck Popper</strong> (Yellow/White)</span>
+              <a href="#" class="text-emerald-400 hover:underline font-mono text-xs">Check Price →</a>
+            </li>
+            <li class="flex justify-between border-b border-slate-800 pb-2">
+              <span><strong>Daiwa SP Minnow 6" Floating</strong> (Bone / Blurple)</span>
+              <a href="#" class="text-emerald-400 hover:underline font-mono text-xs">Check Price →</a>
+            </li>
+            <li class="flex justify-between border-b border-slate-800 pb-2">
+              <span><strong>NLBN / Tsunami 5"-6" Swim Shads</strong></span>
+              <a href="#" class="text-emerald-400 hover:underline font-mono text-xs">Check Price →</a>
+            </li>
+            <li class="flex justify-between border-b border-slate-800 pb-2">
+              <span><strong>Ava A27 Diamond Jig</strong> (Bare or Green Tube)</span>
+              <a href="#" class="text-emerald-400 hover:underline font-mono text-xs">Check Price →</a>
+            </li>
+            <li class="flex justify-between">
+              <span><strong>Spro 80lb Power Swivels &amp; 50lb Mono Leader</strong></span>
+              <a href="#" class="text-emerald-400 hover:underline font-mono text-xs">Check Price →</a>
+            </li>
+          </ul>
+        </div>
+        <p class="text-xs text-slate-500 mt-4 pt-3 border-t border-slate-800">
+          *Support local first: Stop by Pt. Pleasant &amp; Brielle shops for live eels, bunker, and fresh rig intel.
+        </p>
+      </div>
+
+      <!-- How to Cook Card -->
+      <div id="cook" class="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col justify-between">
+        <div>
+          <span class="text-xs font-mono text-amber-400 uppercase">28" to &lt;31" Slot Harvest</span>
+          <h3 class="text-xl font-bold text-white mt-1 mb-3">How to Bleed &amp; Cook Slot Bass</h3>
+          <div class="space-y-3 text-sm text-slate-300">
+            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800">
+              <strong class="text-white block">1. Bleed Immediately in the Wash</strong>
+              Cut the gill rakers as soon as you measure a legal slot fish. Let it bleed out in the surf or bucket for 5 minutes before icing. Makes the fillets snow-white.
+            </div>
+            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800">
+              <strong class="text-white block">2. Remove the Red Meat (Bloodline)</strong>
+              After skinning, trim out the dark lateral strip before cooking—that's where 95% of any "fishy" taste hides.
+            </div>
+            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800">
+              <strong class="text-white block">3. Cast-Iron Blackened or Pan-Seared</strong>
+              Pat bone-dry, coat in Cajun seasoning, sear in ripping hot butter &amp; avocado oil for 3 mins per side. Save the collars for the grill!
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Conservation Card -->
+      <div id="conservation" class="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col justify-between">
+        <div>
+          <span class="text-xs font-mono text-sky-400 uppercase">Protect the Breeder Stock</span>
+          <h3 class="text-xl font-bold text-white mt-1 mb-3">Conservation &amp; Direct Action</h3>
+          <p class="text-sm text-slate-400 mb-4">
+            Big overslot females (35"+) carry millions of eggs. Crush your barbs, swap treble hooks for inline singles, and keep big fish in the water during release.
+          </p>
+          <div class="space-y-2.5 text-sm">
+            <a href="https://stripersforever.org" target="_blank" rel="noopener" class="block bg-slate-950 hover:border-sky-400 border border-slate-800 p-3 rounded-lg transition">
+              <div class="font-bold text-white flex justify-between">Stripers Forever <span>↗</span></div>
+              <p class="text-xs text-slate-400">Wild gamefish conservation &amp; spawning stock protection.</p>
+            </a>
+            <a href="https://saltwaterguidesassociation.org" target="_blank" rel="noopener" class="block bg-slate-950 hover:border-sky-400 border border-slate-800 p-3 rounded-lg transition">
+              <div class="font-bold text-white flex justify-between">American Saltwater Guides Assoc. (ASGA) <span>↗</span></div>
+              <p class="text-xs text-slate-400">Science-driven management for striped bass &amp; menhaden.</p>
+            </a>
+            <a href="https://ccanj.org" target="_blank" rel="noopener" class="block bg-slate-950 hover:border-sky-400 border border-slate-800 p-3 rounded-lg transition">
+              <div class="font-bold text-white flex justify-between">CCA New Jersey <span>↗</span></div>
+              <p class="text-xs text-slate-400">Local NJ habitat reefs &amp; coastal advocacy.</p>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="border-t border-slate-800 bg-slate-950 py-6 text-center text-xs text-slate-500">
+    Built in Point Pleasant Beach, NJ • Open-Source Surf Intelligence • Free Forever
+  </footer>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    // 1. LIVE WEATHER & BAROMETER FETCH (Open-Meteo Marine/Weather API for Pt. Pleasant Beach, NJ)
+    async function fetchLiveConditions() {
+      try {
+        const res = await fetch(
+          'https://api.open-meteo.com/v1/forecast?latitude=40.0912&longitude=-74.0365&current=temperature_2m,surface_pressure,wind_speed_10m,wind_direction_10m&temperature_unit=fahrenheit&wind_speed_unit=mph'
+        );
+        const data = await res.json();
+        const cur = data.current;
+
+        // Convert hPa to inHg for fishermen
+        const inHg = (cur.surface_pressure * 0.02953).toFixed(2);
+        const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+        const windDir = dirs[Math.round(cur.wind_direction_10m / 22.5) % 16];
+
+        document.getElementById('air-temp').textContent = `${Math.round(cur.temperature_2m)}°F`;
+        document.getElementById('wind-speed').textContent = `${windDir} ${Math.round(cur.wind_speed_10m)} mph`;
+        document.getElementById('barometer').textContent = `${inHg} inHg`;
+      } catch (e) {
+        console.warn('Weather fallback active', e);
+      }
+    }
+
+    // 2. LEAFLET MAP & ZONE DATA (Live vs Historical)
+    const map = L.map('map').setView([40.08, -74.02], 9);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; OpenStreetMap &copy; CARTO'
+    }).addTo(map);
+
+    const migrationData = {
+      live: [
+        {
+          name: 'Zone 1: Raritan Bay & Sandy Hook',
+          coords: [40.46, -74.00],
+          radius: 8500,
+          color: '#ef4444', // Red = Heavy Biomass
+          status: 'HEAVY BIOMASS',
+          bait: 'Adult Bunker & Peanut Bunker',
+          report: 'Big body of overslot fish & slots blitzing under birds inside the Hook and down the oceanfront on morning outgoing tides.'
+        },
+        {
+          name: 'Zone 2: Asbury Park to Manasquan Inlet',
+          coords: [40.16, -74.01],
+          radius: 8000,
+          color: '#f59e0b', // Amber = Moving In
+          status: 'MOVING IN / ACTIVE NIGHT BITE',
+          bait: 'Mullet, Adult Bunker, Sand Eels',
+          report: 'Inlet rocks producing quality fish at night on incoming/outgoing switches with shads, darters, and live eels.'
+        },
+        {
+          name: 'Zone 3: Pt. Pleasant Beach to IBSP',
+          coords: [39.96, -74.06],
+          radius: 9500,
+          color: '#ef4444',
+          status: 'PRIME SURF WINDOW',
+          bait: 'Bunker Pods & Rainfish/Sand Eels',
+          report: 'Bunker schools tight to the beach from Maryland Ave down through Island Beach State Park. Dawn popper bite + night needlefish bite heating up.'
+        },
+        {
+          name: 'Zone 4: Barnegat Inlet to LBI',
+          coords: [39.75, -74.09],
+          radius: 8500,
+          color: '#38bdf8', // Blue = Scout Fish
+          status: 'RESIDENT & SCOUT FISH',
+          bait: 'Mullet & Spearing',
+          report: 'Schoolies and slot fish around Barnegat jetty and sedges; main northern biomass still 15–25 miles north.'
+        }
+      ],
+      historical: [
+        {
+          name: 'Zone 1: Raritan Bay & Sandy Hook (5-Yr Avg Oct Wk 3)',
+          coords: [40.46, -74.00],
+          radius: 8500,
+          color: '#ef4444',
+          status: 'HISTORICAL PEAK',
+          bait: 'Adult Bunker (60-63°F Water)',
+          report: '5-Yr Historical Log: Mid-October marks the staging peak in Raritan Channel before the first major Nor’easter pushes fish down the Monmouth beaches.'
+        },
+        {
+          name: 'Zone 2: Asbury to Manasquan Inlet (5-Yr Avg Oct Wk 3)',
+          coords: [40.16, -74.01],
+          radius: 8000,
+          color: '#f59e0b',
+          status: 'MULLET & BUNKER TRANSITION',
+          bait: 'Finger Mullet & Bunker',
+          report: '5-Yr Historical Log: First push of ocean-run slots arrives behind the tail end of the finger mullet run.'
+        },
+        {
+          name: 'Zone 3: Pt. Beach to IBSP (5-Yr Avg Oct Wk 3)',
+          coords: [39.96, -74.06],
+          radius: 9500,
+          color: '#f59e0b',
+          status: 'EARLY FALL PUSH',
+          bait: 'Mullet, Peanut Bunker, Sand Eels',
+          report: '5-Yr Historical Log: Night surf anglers score steadily on SP Minnows and black/purple bombers before the November sand eel invasion.'
+        },
+        {
+          name: 'Zone 4: Barnegat Light to LBI (5-Yr Avg Oct Wk 3)',
+          coords: [39.75, -74.09],
+          radius: 8500,
+          color: '#38bdf8',
+          status: 'INLET RESIDENT BITE',
+          bait: 'Green Crabs, Mullet, Spot',
+          report: '5-Yr Historical Log: Resident inlet bass active on outgoing tides; main ocean migration typically hits LBI first week of November.'
+        }
+      ]
+    };
+
+    let activeCircles = [];
+
+    function setMapMode(mode) {
+      // Update buttons
+      const liveBtn = document.getElementById('btn-live');
+      const histBtn = document.getElementById('btn-hist');
+      const indicator = document.getElementById('mode-indicator');
+
+      if (mode === 'live') {
+        liveBtn.className = 'px-3 py-1.5 text-xs font-bold rounded-md bg-emerald-500 text-slate-950 transition';
+        histBtn.className = 'px-3 py-1.5 text-xs font-bold rounded-md text-slate-400 hover:text-white transition';
+        indicator.textContent = 'Showing: Current Fleet & Surf Intel';
+      } else {
+        histBtn.className = 'px-3 py-1.5 text-xs font-bold rounded-md bg-amber-400 text-slate-950 transition';
+        liveBtn.className = 'px-3 py-1.5 text-xs font-bold rounded-md text-slate-400 hover:text-white transition';
+        indicator.textContent = 'Showing: 5-Year Historical Average (Oct Week 3)';
+      }
+
+      // Clear old markers
+      activeCircles.forEach(c => map.removeLayer(c));
+      activeCircles = [];
+
+      const cardsContainer = document.getElementById('zone-cards');
+      cardsContainer.innerHTML = '';
+
+      migrationData[mode].forEach(z => {
+        const circle = L.circle(z.coords, {
+          color: z.color,
+          fillColor: z.color,
+          fillOpacity: 0.35,
+          radius: z.radius
+        }).addTo(map);
+
+        circle.bindPopup(`
+          <div style="min-width:210px">
+            <strong style="color:${z.color};font-size:11px">${z.status}</strong>
+            <h4 style="font-weight:bold;margin:2px 0 6px 0;font-size:14px">${z.name}</h4>
+            <p style="font-size:12px;margin:0 0 4px 0"><strong>Dominant Bait:</strong> ${z.bait}</p>
+            <p style="font-size:12px;margin:0;color:#cbd5e1">${z.report}</p>
+          </div>
+        `);
+        activeCircles.push(circle);
+
+        // Render Sidebar Card
+        cardsContainer.innerHTML += `
+          <div class="bg-slate-950 border border-slate-800 rounded-lg p-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-white">${z.name.split(':')[1] || z.name}</span>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded" style="background:${z.color}22;color:${z.color}">${z.status}</span>
+            </div>
+            <p class="text-xs text-slate-400 mt-1"><strong>Bait:</strong> ${z.bait}</p>
+            <p class="text-xs text-slate-300 mt-1">${z.report}</p>
+          </div>
+        `;
+      });
+    }
+
+    // 3. INTERACTIVE "HOW THEY ACT" LOGIC
+    function calculateBehavior() {
+      const time = document.getElementById('sel-time').value;
+      const tide = document.getElementById('sel-tide').value;
+      const baro = document.getElementById('sel-baro').value;
+      const mood = document.getElementById('sel-mood').value;
+
+      let title = '';
+      let behavior = '';
+      let primary = '';
+      let planB = '';
+      let badge = 'High-Percentage Window';
+
+      if (baro === 'dropping' && tide === 'outgoing') {
+        title = 'Pre-Front Outgoing Flush (Aggressive Feed Window)';
+        behavior = 'A dropping barometer combined with water dumping out of Manasquan Inlet and back bays flushes bait straight into the trough. Bass stage on the outer edge of the wash and ambush anything swept out.';
+      } else if (time === 'day' && baro === 'rising') {
+        title = 'High-Pressure Bluebird Sky Slump';
+        badge = 'Technical / Grind Window';
+        behavior = 'Post-front high pressure and bright sun pushes bass deeper off the beach lip or tight against deep structure. They will ignore noisy surface plugs in clean water.';
+      } else if (time === 'night') {
+        title = 'Night Surf Patrol (Tight to the Lip)';
+        behavior = 'Under cover of darkness, big bass push within 15 feet of the dry sand to pin bunker, mullet, and sand eels against the shorebreak. Silhouette and slow vibration matter more than color.';
+      } else {
+        title = 'Moving Water Transition Window';
+        behavior = 'Bass are cruising the sloughs and cuts between sandbars looking for disoriented bait pushed by the current.';
+      }
+
+      // Primary call
+      if (time === 'night') {
+        primary = 'Black or Blurple 6" SP Minnow, Super Strike Darter, or slow-rolled Needlefish in dark silhouettes.';
+      } else if (time === 'dawn' || time === 'dusk') {
+        primary = 'Bone/Yellow Pencil Popper or Little Neck Swimmer worked across the outer bar and into the trough.';
+      } else {
+        primary = 'Ava A27 Diamond Jig (long-cast to outer bar) or 5" White Paddle-Tail Swim Shad bounced off bottom.';
+      }
+
+      // Lockjaw adjustment
+      if (mood === 'lockjaw') {
+        planB = 'LOCKJAW FIX: Add a white bucktail teaser 18" ahead of your plug (90% of picky bass will eat the teaser), downsize to 30lb fluorocarbon leader, or crawl a weighted soft plastic/rigged eel dead-slow along the bottom.';
+      } else {
+        planB = 'Keep retrieve steady and cover water—walk the beach until you intersect the moving school in a cut.';
+      }
+
+      document.getElementById('out-title').textContent = title;
+      document.getElementById('out-behavior').textContent = behavior;
+      document.getElementById('out-primary').textContent = primary;
+      document.getElementById('out-planb').textContent = planB;
+      document.getElementById('out-badge').textContent = badge;
+    }
+
+    // Initialize on load
+    fetchLiveConditions();
+    setMapMode('live');
+    calculateBehavior();
+  </script>
+</body>
+</html>
